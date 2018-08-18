@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void install(InstallApk installApk) {
+                MainActivity.this.installApk = installApk;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     if (getPackageManager().canRequestPackageInstalls()){
                         installApk.next();
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && requestCode == 100){
             installApk.next();
         }else {
-            Intent intent =new Intent(Settings.ACTION_APPLICATION_SETTINGS);
+            Intent intent =new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:" + getPackageName()));
             startActivityForResult(intent, 100);
         }
     }
