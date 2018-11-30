@@ -8,16 +8,5 @@
 
     <application>
 
-        <!--7.0以上必须指定provider-->
-        <provider
-            android:authorities="com.thanatos.util.renewlib"
-            android:name=".DownloadFileProvider"
-            android:grantUriPermissions="true"
-            android:exported="false">
-            <!--元数据-->
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/download_file_path" />
-        </provider>
     </application>
 </manifest>

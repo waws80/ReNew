@@ -1,12 +1,9 @@
 package com.thanatos.util.renewlib;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.support.v4.content.ContextCompat;
 
 import java.io.File;
 
@@ -27,15 +24,18 @@ public final class InstallApk {
         this.mFile = file;
     }
 
+    public File getFile() {
+        return mFile;
+    }
+
     /**
      * 开始安装apk
      */
-    public void next(){
+    public void next(Uri apkUri){
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M){
 
-            Uri apkUri = DownloadFileProvider.getUriForFile(mContext, "com.thanatos.util.renewlib", mFile);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             i.setDataAndType(apkUri,
                     "application/vnd.android.package-archive");
