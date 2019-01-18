@@ -59,12 +59,12 @@ public class MainActivity extends AppCompatActivity {
                 MainActivity.this.installApk = installApk;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     if (getPackageManager().canRequestPackageInstalls()){
-                        installApk.next();
+                        //installApk.next();
                     }else {
                         ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.REQUEST_INSTALL_PACKAGES},100);
                     }
                 }else {
-                    installApk.next();
+                    //installApk.next();
                 }
 
             }
@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && requestCode == 100){
-            installApk.next();
+            //installApk.next();
         }else {
             Intent intent =new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:" + getPackageName()));
             startActivityForResult(intent, 100);
@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if ( requestCode == 100 && resultCode == RESULT_OK){
-                installApk.next();
+                //installApk.next();
             }
         }
     }
