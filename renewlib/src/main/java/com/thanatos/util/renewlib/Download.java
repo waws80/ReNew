@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +51,7 @@ final class Download {
      */
     void execute(String url, String apkName){
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        request.setDescription("正在下载新版本");
         clearApk(apkName+".apk");
         mFile = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),apkName+".apk");
         request.setDestinationUri(Uri.fromFile(mFile));
@@ -108,16 +110,47 @@ final class Download {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID,-1);
-            if (id != downloadId) return;
-            isFinish = true;
-            mVersionInterceptor.progress(100);
-            //提升文件的读写权限，防止安装失败
-            setPermission(mFile.getPath());
-            //安装apk
-            InstallApk installApk = new InstallApk(context,mFile);
-            mVersionInterceptor.install(installApk);
+            checkStatus(context);
+        }
 
+        //检查下载状态
+        private void checkStatus(Context context) {
+            DownloadManager.Query query = new DownloadManager.Query();
+            //通过下载的id查找
+            query.setFilterById(downloadId);
+            Cursor cursor = mDownloadManager.query(query);
+            if (cursor.moveToFirst()) {
+                int status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                switch (status) {
+                    //下载暂停
+                    case DownloadManager.STATUS_PAUSED:
+                        break;
+                    //下载延迟
+                    case DownloadManager.STATUS_PENDING:
+                        break;
+                    //正在下载
+                    case DownloadManager.STATUS_RUNNING:
+                        break;
+                    //下载完成
+                    case DownloadManager.STATUS_SUCCESSFUL:
+                        //下载完成安装APK
+                        isFinish = true;
+                        mVersionInterceptor.progress(100);
+                        //提升文件的读写权限，防止安装失败
+                        setPermission(mFile.getPath());
+                        //安装apk
+                        InstallApk installApk = new InstallApk(context,mFile);
+                        mVersionInterceptor.install(installApk);
+                        cursor.close();
+                        break;
+                    //下载失败
+                    case DownloadManager.STATUS_FAILED:
+                        Toast.makeText(context, "下载失败", Toast.LENGTH_SHORT).show();
+                        cursor.close();
+                        context.unregisterReceiver(this);
+                        break;
+                }
+            }
         }
 
         /**

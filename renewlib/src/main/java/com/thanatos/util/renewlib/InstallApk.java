@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Build;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  *  功能描述: 安装apk工具类
@@ -44,6 +45,21 @@ public final class InstallApk {
                     "application/vnd.android.package-archive");
         }
         mContext.startActivity(i);
+    }
+
+
+    /**
+     * 提升文件的读写权限
+     * @param path
+     */
+    private void setPermission(String path){
+        String command = "chmod 777 "+path;
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            runtime.exec(command);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }
