@@ -1,7 +1,7 @@
 package com.thanatos.util.renewlib;
 
-import android.app.Application;
 import android.app.DownloadManager;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -24,7 +24,7 @@ import java.io.IOException;
  *  @createTime: 2018/8/11
  *  @updateTime: 2018/8/11 14:58
  */
-final class Download {
+public final class Download {
 
     private VersionInterceptor mVersionInterceptor;
 
@@ -39,6 +39,9 @@ final class Download {
     private File mFile;
 
     private long downloadId = -1;
+
+    //挂起线程
+    private boolean pauseCallBackThread = false;
 
     Download(Context context, VersionInterceptor interceptor){
         this.mContext = context;
@@ -57,7 +60,7 @@ final class Download {
                 || state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER
                 || state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED){
             //系统下载器被禁用了
-            mVersionInterceptor.unEnableStartDownloadManager();
+            mVersionInterceptor.unEnableStartDownloadManager(this);
             return;
         }
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
@@ -69,7 +72,14 @@ final class Download {
         downloadId = mDownloadManager.enqueue(request);
         DownloadFinishReceiver receiver = new DownloadFinishReceiver();
         this.mContext.registerReceiver(receiver,new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-        new Thread(){
+        callBackProgress.start();
+    }
+
+    /**
+     * 进度回调线程
+     * @return
+     */
+    private Thread callBackProgress =  new Thread(){
             @Override
             public void run() {
                 super.run();
@@ -79,16 +89,17 @@ final class Download {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                    if (pauseCallBackThread) return;
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
+
                             mVersionInterceptor.progress(getProgress());
                         }
                     });
                 }
             }
-        }.start();
-    }
+        };
 
     /**
      * 获取下载进度
@@ -121,7 +132,10 @@ final class Download {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            checkStatus(context);
+
+            if (intent.getAction() != null && intent.getAction().equals(DownloadManager.ACTION_DOWNLOAD_COMPLETE)){
+                checkStatus(context);
+            }
         }
 
         //检查下载状态
@@ -135,12 +149,14 @@ final class Download {
                 switch (status) {
                     //下载暂停
                     case DownloadManager.STATUS_PAUSED:
+                        pauseCallBackThread = true;
                         break;
                     //下载延迟
                     case DownloadManager.STATUS_PENDING:
                         break;
                     //正在下载
                     case DownloadManager.STATUS_RUNNING:
+                        pauseCallBackThread = false;
                         break;
                     //下载完成
                     case DownloadManager.STATUS_SUCCESSFUL:
@@ -158,6 +174,7 @@ final class Download {
                         break;
                     //下载失败
                     case DownloadManager.STATUS_FAILED:
+                        isFinish = true;
                         Toast.makeText(context, "下载失败", Toast.LENGTH_SHORT).show();
                         cursor.close();
                         context.unregisterReceiver(this);
@@ -195,7 +212,21 @@ final class Download {
     }
 
 
-
+    /**
+     * 启动系统下载管理器
+     */
+    public void startSystemDownloadManager(){
+        String packageName = "com.android.providers.downloads";
+        try {
+            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:"+packageName));
+            mContext.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            e.printStackTrace();
+            Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS);
+            mContext.startActivity(intent);
+        }
+    }
 
 
 
