@@ -1,10 +1,12 @@
 package com.thanatos.util.renewlib;
 
+import android.app.Application;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
@@ -50,11 +52,20 @@ final class Download {
      * @param apkName
      */
     void execute(String url, String apkName){
+        int state = mContext.getPackageManager().getApplicationEnabledSetting("com.android.providers.downloads");
+        if (state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                || state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER
+                || state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED){
+            //系统下载器被禁用了
+            mVersionInterceptor.unEnableStartDownloadManager();
+            return;
+        }
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         request.setDescription("正在下载新版本");
         clearApk(apkName+".apk");
         mFile = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),apkName+".apk");
         request.setDestinationUri(Uri.fromFile(mFile));
+        request.setMimeType("application/vnd.android.package-archive");
         downloadId = mDownloadManager.enqueue(request);
         DownloadFinishReceiver receiver = new DownloadFinishReceiver();
         this.mContext.registerReceiver(receiver,new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
@@ -136,12 +147,14 @@ final class Download {
                         //下载完成安装APK
                         isFinish = true;
                         mVersionInterceptor.progress(100);
+                        LogUtils.d("下载完成了");
                         //提升文件的读写权限，防止安装失败
                         setPermission(mFile.getPath());
                         //安装apk
                         InstallApk installApk = new InstallApk(context,mFile);
                         mVersionInterceptor.install(installApk);
                         cursor.close();
+                        context.unregisterReceiver(this);
                         break;
                     //下载失败
                     case DownloadManager.STATUS_FAILED:
@@ -173,13 +186,12 @@ final class Download {
      * @param apkName apk名字
      * @return
      */
-    private File clearApk(String apkName) {
+    private void clearApk(String apkName) {
         File apkFile = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
                 apkName);
         if (apkFile.exists()) {
             apkFile.delete();
         }
-        return apkFile;
     }
 
 

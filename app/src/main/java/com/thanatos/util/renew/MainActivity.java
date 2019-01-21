@@ -50,6 +50,11 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
+            public void unEnableStartDownloadManager() {
+
+            }
+
+            @Override
             public void progress(int progress) {
                 LogUtils.d("进度："+progress);
             }

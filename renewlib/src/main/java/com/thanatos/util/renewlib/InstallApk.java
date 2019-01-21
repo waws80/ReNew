@@ -47,19 +47,4 @@ public final class InstallApk {
         mContext.startActivity(i);
     }
 
-
-    /**
-     * 提升文件的读写权限
-     * @param path
-     */
-    private void setPermission(String path){
-        String command = "chmod 777 "+path;
-        Runtime runtime = Runtime.getRuntime();
-        try {
-            runtime.exec(command);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
 }

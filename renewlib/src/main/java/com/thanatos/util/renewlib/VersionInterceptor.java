@@ -23,6 +23,8 @@ public interface VersionInterceptor {
     DownloadBuild dataResult(String string);
 
 
+    void unEnableStartDownloadManager();
+
     void progress(int progress);
 
 
